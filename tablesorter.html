@@ -1,0 +1,136 @@
+<html>
+	<head>
+		<title>Table Sorter Test Page</title>
+		<script type="text/javascript" src="tablesorter.js"></script>
+		<style>
+			tfoot td, thead td{
+				background-color: #dddddd;
+			}
+			td, th{
+				border: 1px solid;
+				padding: 3px;
+			}
+			table{
+				border: 1px solid;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Table Sorter Test Page</h1>
+		<p>
+			This is the test page for the Table Sorter script. Click the 'Make Sortable' button below to try it out.
+		</p>
+		<button onclick="processAllTables()">Make Sortable</button>
+		
+		<h2>Table with TR/TH and TR/TD structure</h2>
+		<table>
+			<tr>
+				<th>Country</th>
+				<th>Capital City</th>
+				<th>Population</th>
+				<th>Penetration</th>
+			</tr>
+			<tr>
+				<td>United Kingdom</td>
+				<td>London</td>
+				<td>59000000</td>
+				<td>12.4%</td>
+		
+			</tr>
+			<tr>
+				<td>Czech Republic</td>  			
+				<td>Prague</td>
+				<td>10000000</td>
+				<td>23.9%</td>
+			</tr>
+		
+			<tr>
+				<td colspan="2">Vatican City</td>  			
+				<td>12</td>
+				<td>8%</td>  			
+			</tr>
+			<tr>
+				<td>Antractica</td>  			
+				<td>None</td>  			
+				<td colspan="2">0</td>  			  			
+			</tr>
+		</table>
+
+		<h2>Table with THEAD/TR/TD and TBODY/TR/TD and TFOOT/TR/TD structure</h2>
+		<table>
+			<thead>
+				<tr>
+					<td>Country</td>
+					<td>Capital City</td>
+					<td>Population</td>
+					<td>Penetration</td>
+				</tr>	
+			</thead>
+			<tbody>
+				<tr>
+					<td>United Kingdom</td>
+					<td>London</td>
+					<td>59000000</td>
+					<td>12.4%</td>
+				</tr>
+				<tr>
+					<td>Czech Republic</td>  			
+					<td>Prague</td>
+					<td>10000000</td>
+					<td>23.9%</td>
+				</tr>
+				<tr>
+					<td colspan="2">Vatican City</td>  			
+					<td>12</td>
+					<td>8%</td>  			
+				</tr>
+				<tr>
+					<td>Antractica</td>  			
+					<td>None</td>  			
+					<td colspan="2">0</td>  			  			
+				</tr>
+			</tbody>
+			<tfoot>
+				<tr>
+					<td>Country</td>
+					<td>Capital City</td>
+					<td>Population</td>
+					<td>Penetration</td>
+				</tr>				
+			</tfoot>
+		</table>
+		
+		<h2>Table with cells that contain markup</h2>
+		<table>
+			<tr>
+				<th>Country</th>
+				<th>Capital City</th>
+				<th>Population</th>
+				<th>Penetration</th>
+			</tr>
+			<tr>
+				<td><b>United</b> <i>Kingdom</i></td>
+				<td>London</td>
+				<td>59000000</td>
+				<td>12.4%</td>
+		
+			</tr>
+			<tr>
+				<td>Czech Republic</td>  			
+				<td><blink>Prague</blink></td>
+				<td><a href="#">10000000</a></td>
+				<td><strong><em>23.9%</em></strong></td>
+			</tr>
+			<tr>
+				<td colspan="2"><marquee>Vatican City</marquee></td>  			
+				<td>12</td>
+				<td>8%</td>  			
+			</tr>
+			<tr>
+				<td><span style="color: blue">Antractica</span></td>  			
+				<td>None</td>
+				<td colspan="2">0</td>  			  			
+			</tr>
+		</table>
+	</body>
+</html>
