@@ -1,17 +1,25 @@
 function forEach(arr, fnDoThis){
-    var len = arr.length;
-    for (var i=0; i < len; i++){
+    var len = arr.length, i;
+    for (i=0; i < len; i++){
         fnDoThis(arr[i], i);
     }
 }
 
 function forEachObject(obj, fnDoThis){
-    for (var item in obj){
+	var item;
+    for (item in obj){
         if (obj.hasOwnProperty(item)){
             fnDoThis(obj[item]);
         }
     }
 }
+
+var makeNumFromText = (function(){
+	var regexNonNumeric = /[^0-9\.+\-]+/;
+	return function(txt){
+		return parseFloat(txt.replace(',', '').replace(regexNonNumeric, ' '));
+	};
+}());
 
 function processAllTables(){
 	forEach(document.getElementsByTagName("TABLE"), function(table){
@@ -20,18 +28,13 @@ function processAllTables(){
 }
 
 function processTable(tableElement){
+    var rowObjects = [], currentSortColIndex = null, currentSortAscending = null, linkTds = [], rowWithArrows, rowWithOptions, colCount = 0, sortTypes, currentSortType;
+
     if ( !checkTableStructureOk(tableElement) ){
-        return null;
+        return;
     }
 
- // State is initialised here
-    var rowObjects           = [];
-    var currentSortColIndex  = null;
-    var currentSortAscending = null;
-    var linkTds              = [];
-    var rowWithArrows, rowWithOptions;
-    var colCount             = 0;
-    var sortTypes = {
+    sortTypes = {
         'NONE' : {
             'text' : 'none',
             'fn'   : sortRestore
@@ -45,7 +48,7 @@ function processTable(tableElement){
             'fn'   : sortColByNum
         }
     };
-    var currentSortType = sortTypes.NONE;
+    currentSortType = sortTypes.NONE;
 
 
     function sortRestore(){
@@ -59,49 +62,44 @@ function processTable(tableElement){
         if (col<colCount){
             var multiplier = ascending ? 1 : -1;
             rowObjects.sort(function(a,b){
-                var aItem = a.getCellValue(col);
-                aItem = aItem ? aItem.toLowerCase() : aItem;
+                var aItem = a.getCellValue(col),
+                	bItem = b.getCellValue(col);
 
-                var bItem = b.getCellValue(col);
+                aItem = aItem ? aItem.toLowerCase() : aItem;
                 bItem = bItem ? bItem.toLowerCase() : bItem;
 
                 if (aItem){
                     if (bItem){
                         if (aItem > bItem){
-                            return 1 * multiplier;
+                            return multiplier;
                         } else if (aItem < bItem){
                             return -1 * multiplier;
-                        } else {
-                            return 0;
                         }
-                    } else {
-                        return 1 * multiplier;
-                    }
-                } else {
-                    if (bItem){
-                        return -1 * multiplier;
-                    } else {
                         return 0;
                     }
+                    return multiplier;
+
                 }
+                if (bItem){
+                    return -1 * multiplier;
+                }
+                return 0;
             });
         }
         redraw();
     }
 
     function sortColByNum(col, ascending){
-        function makeNumFromText(txt){
-            return parseFloat(txt.replace(/,/g, '').replace(/[^0-9\.+\-]+/, ' '));
-        }
+        var multiplier, aNum, bNum;
         if (col<colCount){
-            var multiplier = ascending ? 1 : -1;
+            multiplier = ascending ? 1 : -1;
             rowObjects.sort(function(a,b){
-                var aNum = makeNumFromText(a.getCellValue(col));
+                aNum = makeNumFromText(a.getCellValue(col));
                 if (isNaN(aNum)){
                  // Make non-numeric values go to the bottom of the list
                     return Infinity;
                 }
-                var bNum = makeNumFromText(b.getCellValue(col));
+                bNum = makeNumFromText(b.getCellValue(col));
                 if (isNaN(bNum)){
                  // Make non-numeric values go to the bottom of the list
                     return -Infinity;
@@ -126,32 +124,29 @@ function processTable(tableElement){
 
     function checkTableStructureOk(tableElement){
      // tables that contain other tables are not processed...
-         var nestedTables = tableElement.getElementsByTagName("TABLE");
+         var rows, nestedTables = tableElement.getElementsByTagName("TABLE");
          if (nestedTables.length > 0){
              return false;
          }
 
      // tables that have less than 2 rows are not processed...
-         var rows = tableElement.getElementsByTagName("TR");
+         rows = tableElement.getElementsByTagName("TR");
          if (rows.length < 2){
              return false;
          }
 
      // tables that don't have any text nodes are not processed...
           function checkForTextNodeChildren(item){
-              var childNodes = item.childNodes;
+              var i, l, text, childNode, TEXT_NODE_TYPE = 3, childNodes = item.childNodes, TRIM_REGEX = /^\s+|\s+$/;
 
               if (!childNodes){
                   return false;
               }
 
-              var childNode;
-              var TEXT_NODE_TYPE = 3;
-              var TRIM_REGEX     = /^\s+|\s+$/;
-              for (var i=0, l=childNodes.length; i<l; i++){
+              for (i=0, l=childNodes.length; i<l; i++) {
                   childNode = childNodes[i];
                   if (childNode.nodeType===TEXT_NODE_TYPE){
-                      var text = childNode.nodeValue;
+                      text = childNode.nodeValue;
                       text = text.replace(TRIM_REGEX, '');
                       if (text.length > 0){
                           return true;
@@ -172,37 +167,32 @@ function processTable(tableElement){
     }
 
     function buildRowObject(trElement, index){
+    	var tdElements, obj = {}, parent = trElement.parentNode, cellToElementMappingArray = [], cellIndex=0;
         if (trElement.parentNode.tagName==='THEAD'){
          // Any rows inside a header are ignored
             return null;
         }
 
-        var tdElements = trElement.getElementsByTagName("TD");
+        tdElements = trElement.getElementsByTagName("TD");
         if (tdElements.length===0){
          // Rows without any TDs are ignored, these are usually headers with THs instead
             return null;
         }
 
-        var obj = {};
-
         obj.getTr = function(){
             return trElement;
         };
-
-        var parent = trElement.parentNode;
-        var cellToElementMappingArray = [];
-        var cellIndex=0;
 
      /* Produces a mapping from 'virtual' cells to TD elements
         so if the third cell has colspan='3' then virtual cells 2,3 and 4 all map to TD 2
          |A|B|  C  |
          [0,1,2,2,2] */
          forEach(tdElements, function(item, i){
-            var colSpan = +(item.colSpan);
+            var j, colSpan = +(item.colSpan);
             if (isNaN(colSpan) || colSpan===0){
                 colSpan = 1;
             }
-            for(var j=0; j<colSpan; j++){
+            for(j=0; j<colSpan; j++){
                 cellToElementMappingArray[cellIndex++] = i;
             }
          });
@@ -212,18 +202,18 @@ function processTable(tableElement){
         };
 
         obj.getCellValue = function(index){
+        	var tdIndex, cellContent, stripMarkupRegex;
             if (index >= cellToElementMappingArray.length){
                 return null;
-            } else {
-                var tdIndex = cellToElementMappingArray[index];
-
-                var cellContent = tdElements[tdIndex].innerHTML;
-             // This might contain markup, eg <span class='tdText>cell text</span>, so clean it out
-                 var STRIP_MARKUP_REGEX = /<[^<]*>/g;
-                cellContent = cellContent.replace(STRIP_MARKUP_REGEX, '');
-
-                return cellContent;
             }
+            tdIndex = cellToElementMappingArray[index];
+
+            cellContent = tdElements[tdIndex].innerHTML;
+         // This might contain markup, eg <span class='tdText>cell text</span>, so clean it out
+            stripMarkupRegex = /<[^<]*>/g;
+            cellContent = cellContent.replace(stripMarkupRegex, '');
+
+            return cellContent;
         };
 
         obj.getOriginalIndex = function(){
@@ -233,6 +223,7 @@ function processTable(tableElement){
         obj.removeFromParent = function(){
             parent.removeChild(trElement);
         };
+
         obj.attachToParent = function(){
             parent.appendChild(trElement);
         };
@@ -240,17 +231,17 @@ function processTable(tableElement){
         return obj;
     }
 
-
     function setSortType(sortType){
         currentSortType = sortType;
 
      // Adjust the styles of the sort-type links
         forEachObject(sortTypes, function(thisSortType){
-            var isSelectedSortType = (thisSortType===currentSortType);
+            var isSelectedSortType = (thisSortType===currentSortType),
+            	style = thisSortType.link.style;
             
-            thisSortType.link.style.color          = (isSelectedSortType ? 'black' : 'gray');
-            thisSortType.link.style.textDecoration = (isSelectedSortType ? '' : 'underline');
-            thisSortType.link.style.cursor         = (isSelectedSortType ? '' : 'pointer'  );
+            style.color          = (isSelectedSortType ? 'black' : 'gray');
+            style.textDecoration = (isSelectedSortType ? '' : 'underline');
+            style.cursor         = (isSelectedSortType ? '' : 'pointer'  );
         });
         
      // Hide the sort arrows if we aren't sorting
@@ -263,47 +254,49 @@ function processTable(tableElement){
     }
 
     function setupSortRows(){
-        var firstRow = rowObjects[0].getTr();
+    	var firstRow, optionsTd, optionsSpan, optionAlphaSortLink, optionNoSortLink, optionNumSortLink, linkTd, linkElement, i;
+
+        firstRow = rowObjects[0].getTr();
 
      // Add a new row for the options
-         rowWithOptions = document.createElement("TR");
-         firstRow.parentNode.insertBefore(rowWithOptions, firstRow);
+        rowWithOptions = document.createElement("TR");
+        firstRow.parentNode.insertBefore(rowWithOptions, firstRow);
 
-        var optionsTd = document.createElement("TD");
+        optionsTd = document.createElement("TD");
         optionsTd.style.fontSize = '0.7em';
         optionsTd.colSpan        = colCount;
 
-        var optionsSpan = document.createElement("SPAN");
+        optionsSpan = document.createElement("SPAN");
         optionsSpan.style.paddingLeft = '1em';
         optionsSpan.innerHTML         = 'Sort Type: ';
 
-        var optionAlphaSortLink = document.createElement("A");
+        optionAlphaSortLink = document.createElement("A");
         optionAlphaSortLink.style.paddingLeft    = '0.5em';
         optionAlphaSortLink.style.textDecoration = 'underline';
         optionAlphaSortLink.style.cursor         = 'pointer';
         optionAlphaSortLink.innerHTML            = 'alpha';
-        optionAlphaSortLink.onclick = function(e){
+        optionAlphaSortLink.onclick = function(){
                     setSortType( sortTypes.ALPHA );
                 };
         sortTypes.ALPHA.link = optionAlphaSortLink;
 
-        var optionNoSortLink = document.createElement("A");
+        optionNoSortLink = document.createElement("A");
         optionNoSortLink.style.paddingLeft    = '0.5em';
         optionNoSortLink.style.textDecoration = 'underline';
         optionNoSortLink.style.cursor         = 'pointer';
         optionNoSortLink.innerHTML            = 'none';
-        optionNoSortLink.onclick = function(e){
+        optionNoSortLink.onclick = function(){
                     setSortType( sortTypes.NONE );
                     sortTypes.NONE.fn();
                 };
         sortTypes.NONE.link = optionNoSortLink;
 
-        var optionNumSortLink = document.createElement("A");
+        optionNumSortLink = document.createElement("A");
         optionNumSortLink.style.paddingLeft    = '0.5em';
         optionNumSortLink.style.textDecoration = 'underline';
         optionNumSortLink.style.cursor         = 'pointer';
         optionNumSortLink.innerHTML            = 'num';
-        optionNumSortLink.onclick = function(e){
+        optionNumSortLink.onclick = function(){
                     setSortType( sortTypes.NUM );
                 };
         sortTypes.NUM.link = optionNumSortLink;
@@ -315,10 +308,9 @@ function processTable(tableElement){
         rowWithOptions.appendChild(optionsTd);
 
      // Add a new row for the sort arrows
-         rowWithArrows = document.createElement("TR");
-         firstRow.parentNode.insertBefore(rowWithArrows, firstRow);
-         var linkTd, linkElement;
-         for(var i=0; i<colCount; i++){
+        rowWithArrows = document.createElement("TR");
+        firstRow.parentNode.insertBefore(rowWithArrows, firstRow);
+        for(i=0; i<colCount; i++){
             linkTd = document.createElement("TD");
             linkTd.style.fontSize   = '0.7em';
             linkTd.style.fontWeight = 'bold';
@@ -344,9 +336,9 @@ function processTable(tableElement){
 
         } else {
          // There is already a column selected
-            if ( colIndex == currentSortColIndex){
+            if ( colIndex === currentSortColIndex){
              // The new column is the same as the current one...
-                if (currentSortAscending != null && ((currentSortAscending && isAscending) || (!currentSortAscending && isDescending))){
+                if (currentSortAscending !== null && ((currentSortAscending && isAscending) || (!currentSortAscending && isDescending))){
                      // The new sort order the the same as the current one, so do nothing
                 } else {
                  // The column is the same, but the order is different
@@ -356,38 +348,42 @@ function processTable(tableElement){
              // The new column is different to the current one so reset the current one
                 setCellImages(currentSortColIndex, false, false);
              // Set up the new one
-                 setCellImages(colIndex, isAscending, isDescending);
+                setCellImages(colIndex, isAscending, isDescending);
             }
         }
     }
 
     function setCellImages(colIndex, isAscending, isDescending){
-        var DATA_URL_UP         = "data:image/gif;base64,R0lGODlhCAAEAPcAAAAAAPfvc/8Avf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH5BAEAAAIALAAAAAAIAAQAAAgSAAUIBABAoEGCBA8iTLhwYUAAADs=";
-        var DATA_URL_UP_FADED   = "data:image/gif;base64,R0lGODlhCAAEAPcAAAAAAP8Avf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH5BAEAAAEALAAAAAAIAAQAAAgWAAMIBABAoEEAAgQUHJgwYUGCECEGBAA7";
-        var DATA_URL_DOWN       = "data:image/gif;base64,R0lGODlhCAAEAPcAAAAAAPfvc/8Avf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH5BAEAAAIALAAAAAAIAAQAAAgTAAEIHChQAMGCAgwOTMgQoYCAAAA7";
-        var DATA_URL_DOWN_FADED = "data:image/gif;base64,R0lGODlhCAAEAPcAAAAAAP8Avf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH5BAEAAAEALAAAAAAIAAQAAAgXAAEIHCgwAAABCAUACMDwoEKGEAsyDAgAOw==";
-
-        var linkCell = linkTds[colIndex];
+        var DATA_URL_UP         = "data:image/gif;base64,R0lGODlhCAAEAPcAAAAAAPfvc/8Avf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH5BAEAAAIALAAAAAAIAAQAAAgSAAUIBABAoEGCBA8iTLhwYUAAADs=",
+        	DATA_URL_UP_FADED   = "data:image/gif;base64,R0lGODlhCAAEAPcAAAAAAP8Avf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH5BAEAAAEALAAAAAAIAAQAAAgWAAMIBABAoEEAAgQUHJgwYUGCECEGBAA7",
+        	DATA_URL_DOWN       = "data:image/gif;base64,R0lGODlhCAAEAPcAAAAAAPfvc/8Avf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH5BAEAAAIALAAAAAAIAAQAAAgTAAEIHChQAMGCAgwOTMgQoYCAAAA7",
+        	DATA_URL_DOWN_FADED = "data:image/gif;base64,R0lGODlhCAAEAPcAAAAAAP8Avf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH5BAEAAAEALAAAAAAIAAQAAAgXAAEIHCgwAAABCAUACMDwoEKGEAsyDAgAOw==",
+        	linkCell = linkTds[colIndex],
+        	upArrowImage, downArrowImage;
 
      // Remove the current images...
         while(linkCell.firstChild){
             linkCell.removeChild(linkCell.firstChild);
         }
 
-        var upArrowImage = document.createElement('IMG');
+        function setImageStyle(img){
+        	img.style.cursor = 'pointer';
+        	img.style.visibility = 'visible';
+        }
+        upArrowImage = document.createElement('IMG');
         upArrowImage.src = (isAscending ? DATA_URL_UP : DATA_URL_UP_FADED);
-        upArrowImage.style.cursor = 'pointer';
-        upArrowImage.onclick = function(e){
+        setImageStyle(upArrowImage);
+        upArrowImage.onclick = function(){
                     updateLinkCell(colIndex, true, false);
                     currentSortColIndex  = colIndex;
                     currentSortAscending = true;
                     currentSortType.fn(colIndex, true);
                 };
 
-        var downArrowImage = document.createElement('IMG');
+        downArrowImage = document.createElement('IMG');
         downArrowImage.src = (isDescending ? DATA_URL_DOWN : DATA_URL_DOWN_FADED);
-        downArrowImage.style.cursor = 'pointer';
-        downArrowImage.onclick = function(e){
+        setImageStyle(downArrowImage);
+        downArrowImage.onclick = function(){
                     updateLinkCell(colIndex, false, true);
                     currentSortColIndex  = colIndex;
                     currentSortAscending = false;
@@ -410,4 +406,3 @@ function processTable(tableElement){
     }
 
 }
-
