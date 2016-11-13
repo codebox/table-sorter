@@ -248,8 +248,7 @@ function processTable(tableElement){
         forEachObject(sortTypes, function(thisSortType){
             var isSelectedSortType = (thisSortType===currentSortType);
             
-            thisSortType.link.style.color          = (isSelectedSortType ? 'black' : 'gray');
-            thisSortType.link.style.textDecoration = (isSelectedSortType ? '' : 'underline');
+            thisSortType.link.style.color          = (isSelectedSortType ? 'gray' : 'black');
             thisSortType.link.style.cursor         = (isSelectedSortType ? '' : 'pointer'  );
         });
         
@@ -266,46 +265,44 @@ function processTable(tableElement){
         var firstRow = rowObjects[0].getTr();
 
      // Add a new row for the options
-         rowWithOptions = document.createElement("TR");
-         firstRow.parentNode.insertBefore(rowWithOptions, firstRow);
+        rowWithOptions = document.createElement("TR");
+        rowWithOptions.style.textAlign = 'center';
+        firstRow.parentNode.insertBefore(rowWithOptions, firstRow);
 
         var optionsTd = document.createElement("TD");
-        optionsTd.style.fontSize = '0.7em';
         optionsTd.colSpan        = colCount;
 
         var optionsSpan = document.createElement("SPAN");
-        optionsSpan.style.paddingLeft = '1em';
-        optionsSpan.innerHTML         = 'Sort Type: ';
 
         var optionAlphaSortLink = document.createElement("A");
         optionAlphaSortLink.style.paddingLeft    = '0.5em';
-        optionAlphaSortLink.style.textDecoration = 'underline';
         optionAlphaSortLink.style.cursor         = 'pointer';
-        optionAlphaSortLink.innerHTML            = 'alpha';
+        optionAlphaSortLink.innerHTML            = '&#x21D5;ABC';
+        optionAlphaSortLink.title                = 'Sort alphabetically';
         optionAlphaSortLink.onclick = function(e){
-                    setSortType( sortTypes.ALPHA );
-                };
+            setSortType( sortTypes.ALPHA );
+        };
         sortTypes.ALPHA.link = optionAlphaSortLink;
 
         var optionNoSortLink = document.createElement("A");
         optionNoSortLink.style.paddingLeft    = '0.5em';
-        optionNoSortLink.style.textDecoration = 'underline';
         optionNoSortLink.style.cursor         = 'pointer';
-        optionNoSortLink.innerHTML            = 'none';
+        optionNoSortLink.innerHTML            = '&#x238c;';
+        optionNoSortLink.title                = 'Undo sorting';
         optionNoSortLink.onclick = function(e){
-                    setSortType( sortTypes.NONE );
-                    sortTypes.NONE.fn();
-                };
+                setSortType( sortTypes.NONE );
+                sortTypes.NONE.fn();
+            };
         sortTypes.NONE.link = optionNoSortLink;
 
         var optionNumSortLink = document.createElement("A");
         optionNumSortLink.style.paddingLeft    = '0.5em';
-        optionNumSortLink.style.textDecoration = 'underline';
         optionNumSortLink.style.cursor         = 'pointer';
-        optionNumSortLink.innerHTML            = 'num';
+        optionNumSortLink.innerHTML            = '&#x21D5;123';
+        optionNumSortLink.title                = 'Sort numerically';
         optionNumSortLink.onclick = function(e){
-                    setSortType( sortTypes.NUM );
-                };
+            setSortType( sortTypes.NUM );
+        };
         sortTypes.NUM.link = optionNumSortLink;
 
         optionsTd.appendChild(optionsSpan);
@@ -320,7 +317,6 @@ function processTable(tableElement){
          var linkTd, linkElement;
          for(var i=0; i<colCount; i++){
             linkTd = document.createElement("TD");
-            linkTd.style.fontSize   = '0.7em';
             linkTd.style.fontWeight = 'bold';
             linkTd.style.textAlign  = 'center';
 
@@ -331,7 +327,7 @@ function processTable(tableElement){
 
             rowWithArrows.appendChild(linkTd);
 
-            setCellImages(i, false, false);
+            setCellSymbols(i, false, false);
          }
 
          setSortType(sortTypes.NONE);
@@ -340,7 +336,7 @@ function processTable(tableElement){
     function updateLinkCell(colIndex, isAscending, isDescending){
         if (currentSortColIndex === null){
          // No column is currently selected, so we don't need to reset anything
-            setCellImages(colIndex, isAscending, isDescending);
+            setCellSymbols(colIndex, isAscending, isDescending);
 
         } else {
          // There is already a column selected
@@ -350,52 +346,49 @@ function processTable(tableElement){
                      // The new sort order the the same as the current one, so do nothing
                 } else {
                  // The column is the same, but the order is different
-                    setCellImages(colIndex, isAscending, isDescending);
+                    setCellSymbols(colIndex, isAscending, isDescending);
                 }
             } else {
              // The new column is different to the current one so reset the current one
-                setCellImages(currentSortColIndex, false, false);
+                setCellSymbols(currentSortColIndex, false, false);
              // Set up the new one
-                 setCellImages(colIndex, isAscending, isDescending);
+                 setCellSymbols(colIndex, isAscending, isDescending);
             }
         }
     }
 
-    function setCellImages(colIndex, isAscending, isDescending){
-        var DATA_URL_UP         = "data:image/gif;base64,R0lGODlhCAAEAPcAAAAAAPfvc/8Avf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH5BAEAAAIALAAAAAAIAAQAAAgSAAUIBABAoEGCBA8iTLhwYUAAADs=";
-        var DATA_URL_UP_FADED   = "data:image/gif;base64,R0lGODlhCAAEAPcAAAAAAP8Avf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH5BAEAAAEALAAAAAAIAAQAAAgWAAMIBABAoEEAAgQUHJgwYUGCECEGBAA7";
-        var DATA_URL_DOWN       = "data:image/gif;base64,R0lGODlhCAAEAPcAAAAAAPfvc/8Avf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH5BAEAAAIALAAAAAAIAAQAAAgTAAEIHChQAMGCAgwOTMgQoYCAAAA7";
-        var DATA_URL_DOWN_FADED = "data:image/gif;base64,R0lGODlhCAAEAPcAAAAAAP8Avf///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////yH5BAEAAAEALAAAAAAIAAQAAAgXAAEIHCgwAAABCAUACMDwoEKGEAsyDAgAOw==";
-
+    function setCellSymbols(colIndex, isAscending, isDescending){
         var linkCell = linkTds[colIndex];
 
-     // Remove the current images...
-        while(linkCell.firstChild){
+     // Remove the current arrows...
+        while(linkCell.firstChild) {
             linkCell.removeChild(linkCell.firstChild);
         }
 
-        var upArrowImage = document.createElement('IMG');
-        upArrowImage.src = (isAscending ? DATA_URL_UP : DATA_URL_UP_FADED);
-        upArrowImage.style.cursor = 'pointer';
-        upArrowImage.onclick = function(e){
-                    updateLinkCell(colIndex, true, false);
-                    currentSortColIndex  = colIndex;
-                    currentSortAscending = true;
-                    currentSortType.fn(colIndex, true);
-                };
+        var upArrowSymbol = document.createElement('SPAN');
+        upArrowSymbol.innerHTML = isAscending ? '&#9650;' : '&#9651;';
+        upArrowSymbol.style.cursor = 'pointer';
+        upArrowSymbol.title = 'Sort Ascending';
+        upArrowSymbol.onclick = function(e){
+            updateLinkCell(colIndex, true, false);
+            currentSortColIndex  = colIndex;
+            currentSortAscending = true;
+            currentSortType.fn(colIndex, true);
+        };
 
-        var downArrowImage = document.createElement('IMG');
-        downArrowImage.src = (isDescending ? DATA_URL_DOWN : DATA_URL_DOWN_FADED);
-        downArrowImage.style.cursor = 'pointer';
-        downArrowImage.onclick = function(e){
-                    updateLinkCell(colIndex, false, true);
-                    currentSortColIndex  = colIndex;
-                    currentSortAscending = false;
-                    currentSortType.fn(colIndex, false);
-                };
+        var downArrowSymbol = document.createElement('SPAN');
+        downArrowSymbol.innerHTML = isDescending ? '&#9660;' : '&#9661;';
+        downArrowSymbol.style.cursor = 'pointer';
+        downArrowSymbol.title = 'Sort Descending';
+        downArrowSymbol.onclick = function(e){
+            updateLinkCell(colIndex, false, true);
+            currentSortColIndex  = colIndex;
+            currentSortAscending = false;
+            currentSortType.fn(colIndex, false);
+        };
 
-        linkCell.appendChild(upArrowImage);
-        linkCell.appendChild(downArrowImage);
+        linkCell.appendChild(upArrowSymbol);
+        linkCell.appendChild(downArrowSymbol);
     }
 
 
